@@ -6,7 +6,7 @@
 #include <time.h>
 //#include <stdbool.h>
 
-#define waitTime 3.0f
+#define waitTime 4.0f
 #define playingTime 10.0f
 
 #define playingState 1
