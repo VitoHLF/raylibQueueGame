@@ -6,12 +6,23 @@
 #include <time.h>
 //#include <stdbool.h>
 
+#define waitTime 3.0f
+#define playingTime 10.0f
+
+#define playingState 1
+#define waitingState 2
+#define overState 3
+
 typedef struct No {
     char item;
     int posX;
     int posY;
     struct No *proximo;
 } No;
+
+typedef struct Timer{
+    float Lifetime;
+}Timer;
 
 void enfileirar(No **fila, char item, int posDesloc);
 No* desenfileirar(No **fila);
@@ -20,6 +31,9 @@ bool comparaInput(No** fila, char input);
 void printFila(No** fila);
 void drawSushi(No* no, int radius);
 void checkKeyPressed(No** fila);
+void StartTimer(Timer* timer, float lifetime);
+void UpdateTimer(Timer* timer);
+bool TimerDone(Timer* timer);
 
 int main() 
 {
@@ -27,33 +41,67 @@ int main()
     const int screenHeight = 720;
     
     No* fila = NULL;
-    int dificuldade = 4;
+    int dificuldade = 4, gameState = waitingState, pontuacao = 0;
+    Timer playingTimer = {0}, waitingTimer = {0};
+    float displayTimer;
     
+    //--------------------------------------------------------------------------------------
+    // SETUP DO JOGO
     srand(time(NULL));
     
-    geraItens(&fila, dificuldade);
+    StartTimer(&waitingTimer, waitTime);
     
-    InitWindow(screenWidth, screenHeight, "raylib");   
-
-    SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
-    
-    // Main game loop
+    // INICIALIZANDO TELA
+    InitWindow(screenWidth, screenHeight, "Jogo de Filas");   
+
+    SetTargetFPS(60);               
+    //--------------------------------------------------------------------------------------    
+    // LOOP DE JOGO
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
         
-        
-        
-        if(fila){
-            checkKeyPressed(&fila);
-        }else{
-            dificuldade++;
-            geraItens(&fila, dificuldade);
+        //----------------------------------------------------------------------------------
+        // ESPERA ENTRE NIVEIS
+        if(gameState == waitingState){
+            UpdateTimer(&waitingTimer);
+            displayTimer = waitingTimer.Lifetime;
+            if(TimerDone(&waitingTimer)){
+                dificuldade++;
+                geraItens(&fila, dificuldade);
+                gameState = playingState;
+                StartTimer(&playingTimer, playingTime);
+            } 
+            else{
+                
+            }
         }
         
+        //----------------------------------------------------------------------------------
+        // JOGANDO
+        if(gameState == playingState){
+            UpdateTimer(&playingTimer);
+            displayTimer = playingTimer.Lifetime;
+            
+            if(TimerDone(&playingTimer)){
+                gameState = overState;
+            }
+            else if(fila){
+                checkKeyPressed(&fila);
+            }else{
+                gameState = waitingState;
+                StartTimer(&waitingTimer, waitTime);
+            }
+        }
+        
+        //----------------------------------------------------------------------------------
+        // DESENHANDO NA TELA
         BeginDrawing();
             
             ClearBackground(RAYWHITE);
+            
+            if(gameState == waitingState) DrawText(TextFormat("Proximos pedidos em %.2fs", displayTimer), 300, 100, 50, GREEN);
+            else if(gameState == playingState) DrawText(TextFormat("Tempo: %.2fs", displayTimer), 500, 100, 50, RED);
             
             /*
             //Texto
@@ -99,8 +147,8 @@ int main()
             DrawText("O", 880, 110, 20, LIGHTGRAY);
             */
             //Items na Esteira
-            printFila(&fila);          
-        
+            if(gameState == playingState) printFila(&fila);
+            if(gameState == overState) DrawText("GAME OVER!", 350, 320, 100, RED);
         EndDrawing();
     }
 
@@ -227,4 +275,25 @@ void checkKeyPressed(No** fila){
     else if(IsKeyPressed(KEY_K)) comparaInput(fila, 'K');
     else if(IsKeyPressed(KEY_L)) comparaInput(fila, 'L');
     
+}
+
+// start or restart a timer with a specific lifetime
+void StartTimer(Timer* timer, float lifetime){
+    if (timer != NULL)
+        timer->Lifetime = lifetime;
+}
+
+// update a timer with the current frame time
+void UpdateTimer(Timer* timer){
+    // subtract this frame from the timer if it's not allready expired
+    if (timer != NULL && timer->Lifetime > 0)
+        timer->Lifetime -= GetFrameTime();
+}
+
+// check if a timer is done.
+bool TimerDone(Timer* timer){
+    if (timer != NULL)
+        return timer->Lifetime <= 0;
+
+	return false;
 }
