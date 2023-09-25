@@ -13,6 +13,14 @@
 #define waitingState 2
 #define overState 3
 
+#define pontosPorAcerto 50
+#define penalidadePorErro 0.5f
+
+#define limiteEsteira 200
+#define velocidadeEsteira 1
+#define espacamentoMinimoSushis 40
+#define espacamentoInicialSushis 70
+
 typedef struct No {
     char item;
     int posX;
@@ -24,16 +32,17 @@ typedef struct Timer{
     float Lifetime;
 }Timer;
 
-void enfileirar(No **fila, char item, int posDesloc);
-No* desenfileirar(No **fila);
+void enfileirar(No** fila, char item, int posDesloc);
+No* desenfileirar(No** fila);
 void geraItens(No** fila, int dificuldade);
+void checkKeyPressed(No** fila, int *pontuacao, Timer* playingTimer);
 bool comparaInput(No** fila, char input);
 void printFila(No** fila);
 void drawSushi(No* no, int radius);
-void checkKeyPressed(No** fila);
 void StartTimer(Timer* timer, float lifetime);
 void UpdateTimer(Timer* timer);
 bool TimerDone(Timer* timer);
+void updateSushiPositions(No** fila, int velocidade);
 
 int main() 
 {
@@ -87,7 +96,8 @@ int main()
                 gameState = overState;
             }
             else if(fila){
-                checkKeyPressed(&fila);
+                updateSushiPositions(&fila, dificuldade-3);
+                checkKeyPressed(&fila, &pontuacao, &playingTimer);
             }else{
                 gameState = waitingState;
                 StartTimer(&waitingTimer, waitTime);
@@ -103,10 +113,10 @@ int main()
             if(gameState == waitingState) DrawText(TextFormat("Proximos pedidos em %.2fs", displayTimer), 300, 100, 50, GREEN);
             else if(gameState == playingState) DrawText(TextFormat("Tempo: %.2fs", displayTimer), 500, 100, 50, RED);
             
-            /*
+            
             //Texto
-            DrawText("Pontos: 1550",20, 20, 20, LIGHTGRAY);
-            DrawText("Tempo: 10s",550, 20, 20, LIGHTGRAY);
+            DrawText(TextFormat("Pontos: %d", pontuacao),20, 20, 20, LIGHTGRAY);
+            /*DrawText("Tempo: 10s",550, 20, 20, LIGHTGRAY);
             DrawText("Completos: 5 pedidos",1000, 20, 20, LIGHTGRAY);
             
             //Personagens
@@ -193,25 +203,37 @@ void geraItens(No** fila, int dificuldade){
     for(int i = 0; i<dificuldade; i++){
         switch(rand()%6){
             case 0:
-                enfileirar(fila, 'A', i*50);
+                enfileirar(fila, 'A', i*espacamentoInicialSushis);
                 break;
             case 1:
-                enfileirar(fila, 'S', i*50);
+                enfileirar(fila, 'S', i*espacamentoInicialSushis);
                 break;
             case 2:
-                enfileirar(fila, 'D', i*50);
+                enfileirar(fila, 'D', i*espacamentoInicialSushis);
                 break;
             case 3:
-                enfileirar(fila, 'J', i*50);
+                enfileirar(fila, 'J', i*espacamentoInicialSushis);
                 break;
             case 4:
-                enfileirar(fila, 'K', i*50);
+                enfileirar(fila, 'K', i*espacamentoInicialSushis);
                 break;
             case 5:
-                enfileirar(fila, 'L', i*50);
+                enfileirar(fila, 'L', i*espacamentoInicialSushis);
                 break;
         }
     }
+}
+
+void checkKeyPressed(No** fila, int *pontuacao, Timer* playingTimer){
+    int input = GetKeyPressed();
+    
+    if(input == KEY_A && comparaInput(fila, 'A')) *pontuacao += pontosPorAcerto;
+    else if(input == KEY_S && comparaInput(fila, 'S')) *pontuacao+= pontosPorAcerto;
+    else if(input == KEY_D && comparaInput(fila, 'D')) *pontuacao+= pontosPorAcerto;
+    else if(input == KEY_J && comparaInput(fila, 'J')) *pontuacao+= pontosPorAcerto;
+    else if(input == KEY_K && comparaInput(fila, 'K')) *pontuacao+= pontosPorAcerto;
+    else if(input == KEY_L && comparaInput(fila, 'L')) *pontuacao+= pontosPorAcerto;
+    else if(input != 0) playingTimer->Lifetime -= penalidadePorErro;
 }
 
 bool comparaInput(No** fila, char input){
@@ -267,15 +289,7 @@ void drawSushi(No* no, int radius){
     }
 }
 
-void checkKeyPressed(No** fila){
-    if(IsKeyPressed(KEY_A)) comparaInput(fila, 'A');
-    else if(IsKeyPressed(KEY_S)) comparaInput(fila, 'S');
-    else if(IsKeyPressed(KEY_D)) comparaInput(fila, 'D');
-    else if(IsKeyPressed(KEY_J)) comparaInput(fila, 'J');
-    else if(IsKeyPressed(KEY_K)) comparaInput(fila, 'K');
-    else if(IsKeyPressed(KEY_L)) comparaInput(fila, 'L');
-    
-}
+
 
 // start or restart a timer with a specific lifetime
 void StartTimer(Timer* timer, float lifetime){
@@ -296,4 +310,15 @@ bool TimerDone(Timer* timer){
         return timer->Lifetime <= 0;
 
 	return false;
+}
+
+void updateSushiPositions(No** fila, int velocidade){
+    No* aux = *fila;
+    if(*fila){        
+        if(aux->posX >= limiteEsteira) aux->posX -= velocidadeEsteira + velocidade/4;
+        while(aux->proximo){        
+            if(aux->proximo->posX >= (aux->posX + espacamentoMinimoSushis)) aux->proximo->posX -= velocidadeEsteira + velocidade/4;
+            aux = aux->proximo;
+        }
+    }
 }
