@@ -6,7 +6,7 @@
 #include <time.h>
 //#include <stdbool.h>
 
-#define waitTime 4.0f
+#define waitTime 3.0f
 #define playingTime 10.0f
 
 #define playingState 1
@@ -28,6 +28,11 @@ typedef struct No {
     struct No *proximo;
 } No;
 
+typedef struct Event{
+    bool isActive;
+    char eventType;
+} Event;
+
 typedef struct Timer{
     float Lifetime;
 }Timer;
@@ -35,14 +40,15 @@ typedef struct Timer{
 void enfileirar(No** fila, char item, int posDesloc);
 No* desenfileirar(No** fila);
 void geraItens(No** fila, int dificuldade);
-void checkKeyPressed(No** fila, int *pontuacao, Timer* playingTimer);
-bool comparaInput(No** fila, char input);
+void checkKeyPressed(No** fila, int *pontuacao, Timer* playingTimer, Event* eventoPopup);
+bool comparaInput(No** fila, char input, Event* eventoPopup);
 void printFila(No** fila);
 void drawSushi(No* no, int radius);
 void StartTimer(Timer* timer, float lifetime);
 void UpdateTimer(Timer* timer);
 bool TimerDone(Timer* timer);
 void updateSushiPositions(No** fila, int velocidade);
+void createRandomEvent(Event* evento);
 
 int main() 
 {
@@ -50,15 +56,18 @@ int main()
     const int screenHeight = 720;
     
     No* fila = NULL;
-    int dificuldade = 4, gameState = waitingState, pontuacao = 0;
-    Timer playingTimer = {0}, waitingTimer = {0};
+    int dificuldade = 4, gameState = waitingState, pontuacao = 0, randomEventProc;
+    Timer playingTimer = {0}, waitingTimer = {0}, randomEventTimer = {0}, createEventTimer = {0};
     float displayTimer;
+    Event eventoPopup;
     
     //--------------------------------------------------------------------------------------
     // SETUP DO JOGO
     srand(time(NULL));
     
     StartTimer(&waitingTimer, waitTime);
+    eventoPopup.isActive = false;
+    eventoPopup.eventType = 'E';
     
     //--------------------------------------------------------------------------------------
     // INICIALIZANDO TELA
@@ -80,24 +89,40 @@ int main()
                 geraItens(&fila, dificuldade);
                 gameState = playingState;
                 StartTimer(&playingTimer, playingTime);
+                StartTimer(&createEventTimer, 1.0f);
             } 
-            else{
-                
-            }
         }
         
         //----------------------------------------------------------------------------------
         // JOGANDO
         if(gameState == playingState){
             UpdateTimer(&playingTimer);
+            UpdateTimer(&createEventTimer);
+            UpdateTimer(&randomEventTimer);            
+            
             displayTimer = playingTimer.Lifetime;
+            
+            if(TimerDone(&createEventTimer) && !eventoPopup.isActive){
+                randomEventProc = rand()%100;
+                if(randomEventProc<10) {
+                    StartTimer(&randomEventTimer, 1.5f);
+                    createRandomEvent(&eventoPopup);
+                }
+                else{
+                    StartTimer(&createEventTimer, 1.0f);
+                }
+            }
+            
+            if(TimerDone(&randomEventTimer)){
+                eventoPopup.isActive = false;
+            }
             
             if(TimerDone(&playingTimer)){
                 gameState = overState;
             }
             else if(fila){
                 updateSushiPositions(&fila, dificuldade-3);
-                checkKeyPressed(&fila, &pontuacao, &playingTimer);
+                checkKeyPressed(&fila, &pontuacao, &playingTimer, &eventoPopup);
             }else{
                 gameState = waitingState;
                 StartTimer(&waitingTimer, waitTime);
@@ -110,12 +135,29 @@ int main()
             
             ClearBackground(RAYWHITE);
             
+            //----------------------------------------------------------------------------------
+            // ESPERA ENTRE NIVEIS
             if(gameState == waitingState) DrawText(TextFormat("Proximos pedidos em %.2fs", displayTimer), 300, 100, 50, GREEN);
-            else if(gameState == playingState) DrawText(TextFormat("Tempo: %.2fs", displayTimer), 500, 100, 50, RED);
+            
+            //----------------------------------------------------------------------------------
+            // JOGANDO
+            if(gameState == playingState){
+                DrawText(TextFormat("Tempo: %.2fs", displayTimer), 500, 100, 50, RED);
+                DrawText(TextFormat("Pontos: %d", pontuacao),20, 20, 20, LIGHTGRAY);
+                if(eventoPopup.isActive) {
+                    DrawCircle(640, 300, 18, YELLOW);  
+                    DrawText(TextFormat("%c", eventoPopup.eventType),637, 297, 20, LIGHTGRAY);
+                }
+                if(gameState == playingState) printFila(&fila);
+            }
+            
+            //----------------------------------------------------------------------------------
+            // GAME OVER
+            if(gameState == overState) DrawText("GAME OVER!", 350, 320, 100, RED);
             
             
             //Texto
-            DrawText(TextFormat("Pontos: %d", pontuacao),20, 20, 20, LIGHTGRAY);
+            
             /*DrawText("Tempo: 10s",550, 20, 20, LIGHTGRAY);
             DrawText("Completos: 5 pedidos",1000, 20, 20, LIGHTGRAY);
             
@@ -139,9 +181,11 @@ int main()
             DrawText("D", 610, 570, 20, LIGHTGRAY);
             DrawText("J", 660, 570, 20, LIGHTGRAY);
             DrawText("K", 710, 570, 20, LIGHTGRAY);
-            DrawText("L", 760, 570, 20, LIGHTGRAY);
+            DrawText("L", 760, 570, 20, LIGHTGRAY); */
             
             //Popups
+            
+            /*
             DrawCircle(410, 150, 18, YELLOW);
             DrawCircle(460, 150, 18, YELLOW);
             DrawCircle(510, 150, 18, YELLOW);            
@@ -157,8 +201,8 @@ int main()
             DrawText("O", 880, 110, 20, LIGHTGRAY);
             */
             //Items na Esteira
-            if(gameState == playingState) printFila(&fila);
-            if(gameState == overState) DrawText("GAME OVER!", 350, 320, 100, RED);
+            
+            
         EndDrawing();
     }
 
@@ -224,19 +268,32 @@ void geraItens(No** fila, int dificuldade){
     }
 }
 
-void checkKeyPressed(No** fila, int *pontuacao, Timer* playingTimer){
+void checkKeyPressed(No** fila, int *pontuacao, Timer* playingTimer, Event* eventoPopup){
     int input = GetKeyPressed();
     
-    if(input == KEY_A && comparaInput(fila, 'A')) *pontuacao += pontosPorAcerto;
-    else if(input == KEY_S && comparaInput(fila, 'S')) *pontuacao+= pontosPorAcerto;
-    else if(input == KEY_D && comparaInput(fila, 'D')) *pontuacao+= pontosPorAcerto;
-    else if(input == KEY_J && comparaInput(fila, 'J')) *pontuacao+= pontosPorAcerto;
-    else if(input == KEY_K && comparaInput(fila, 'K')) *pontuacao+= pontosPorAcerto;
-    else if(input == KEY_L && comparaInput(fila, 'L')) *pontuacao+= pontosPorAcerto;
+    if(eventoPopup->isActive && input == KEY_E && comparaInput(fila, 'E', eventoPopup)){
+        playingTimer->Lifetime += 3;
+        eventoPopup->isActive = false;
+        *pontuacao += 3 * pontosPorAcerto;
+    }
+    else if(eventoPopup->isActive && input == KEY_U && comparaInput(fila, 'U', eventoPopup)) {
+        playingTimer->Lifetime += 3;
+        eventoPopup->isActive = false;
+        *pontuacao += 3 * pontosPorAcerto;
+    }
+    else if(input == KEY_A && comparaInput(fila, 'A', eventoPopup)) *pontuacao += pontosPorAcerto;
+    else if(input == KEY_S && comparaInput(fila, 'S', eventoPopup)) *pontuacao += pontosPorAcerto;
+    else if(input == KEY_D && comparaInput(fila, 'D', eventoPopup)) *pontuacao += pontosPorAcerto;
+    else if(input == KEY_J && comparaInput(fila, 'J', eventoPopup)) *pontuacao += pontosPorAcerto;
+    else if(input == KEY_K && comparaInput(fila, 'K', eventoPopup)) *pontuacao += pontosPorAcerto;
+    else if(input == KEY_L && comparaInput(fila, 'L', eventoPopup)) *pontuacao += pontosPorAcerto;
+    
     else if(input != 0) playingTimer->Lifetime -= penalidadePorErro;
 }
 
-bool comparaInput(No** fila, char input){
+bool comparaInput(No** fila, char input, Event* eventoPopup){
+    
+    if(eventoPopup->isActive && eventoPopup->eventType == input) return true;    
     if(*fila){
         No *remover, *aux = *fila;
         if(input == aux->item){
@@ -320,5 +377,20 @@ void updateSushiPositions(No** fila, int velocidade){
             if(aux->proximo->posX >= (aux->posX + espacamentoMinimoSushis)) aux->proximo->posX -= velocidadeEsteira + velocidade/4;
             aux = aux->proximo;
         }
+    }
+}
+
+void createRandomEvent(Event* evento){
+    int eventType = rand()%2;
+    
+    switch(eventType){
+        case 0:
+            evento->isActive = true;
+            evento->eventType = 'E';
+            break;
+        case 1:
+            evento->isActive = true;
+            evento->eventType = 'U';
+            break;
     }
 }
