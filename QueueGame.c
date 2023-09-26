@@ -18,8 +18,8 @@
 
 #define limiteEsteira 200
 #define velocidadeEsteira 1
-#define espacamentoMinimoSushis 40
-#define espacamentoInicialSushis 70
+#define espacamentoMinimoSushis 50
+#define espacamentoInicialSushis 90
 
 typedef struct No {
     char item;
@@ -42,17 +42,19 @@ No* desenfileirar(No** fila);
 void geraItens(No** fila, int dificuldade);
 void checkKeyPressed(No** fila, int *pontuacao, Timer* playingTimer, Event* eventoPopup);
 bool comparaInput(No** fila, char input, Event* eventoPopup);
-void printFila(No** fila);
-void drawSushi(No* no, int radius);
+void printFila(No** fila, Texture2D* sushis);
+void drawSushi(No* no, int radius, Texture2D* sushis);
 void StartTimer(Timer* timer, float lifetime);
 void UpdateTimer(Timer* timer);
 bool TimerDone(Timer* timer);
 void updateSushiPositions(No** fila, int velocidade);
 void createRandomEvent(Event* evento);
 
+
+
 int main() 
 {
-    const int screenWidth = 1280;
+    const int screenWidth = 1366;
     const int screenHeight = 720;
     
     No* fila = NULL;
@@ -60,6 +62,8 @@ int main()
     Timer playingTimer = {0}, waitingTimer = {0}, randomEventTimer = {0}, createEventTimer = {0};
     float displayTimer;
     Event eventoPopup;
+    Texture2D sushis[6];
+    
     
     //--------------------------------------------------------------------------------------
     // SETUP DO JOGO
@@ -71,7 +75,17 @@ int main()
     
     //--------------------------------------------------------------------------------------
     // INICIALIZANDO TELA
-    InitWindow(screenWidth, screenHeight, "Jogo de Filas");   
+    InitWindow(screenWidth, screenHeight, "Jogo de Filas"); 
+
+    //--------------------------------------------------------------------------------------
+    // TEXTURAS    
+    sushis[0] = LoadTexture("resources/a01.png");
+    sushis[1] = LoadTexture("resources/a02.png");
+    sushis[2] = LoadTexture("resources/a03.png");
+    sushis[3] = LoadTexture("resources/a04.png");
+    sushis[4] = LoadTexture("resources/a05.png");
+    sushis[5] = LoadTexture("resources/a06.png");
+    
 
     SetTargetFPS(60);               
     //--------------------------------------------------------------------------------------    
@@ -148,7 +162,9 @@ int main()
                     DrawCircle(640, 300, 18, YELLOW);  
                     DrawText(TextFormat("%c", eventoPopup.eventType),637, 297, 20, LIGHTGRAY);
                 }
-                if(gameState == playingState) printFila(&fila);
+                if(gameState == playingState) printFila(&fila, &sushis);
+                
+                
             }
             
             //----------------------------------------------------------------------------------
@@ -205,7 +221,15 @@ int main()
             
         EndDrawing();
     }
-
+    
+    
+    UnloadTexture(sushis[0]);
+    UnloadTexture(sushis[1]);
+    UnloadTexture(sushis[2]);
+    UnloadTexture(sushis[3]);
+    UnloadTexture(sushis[4]);
+    UnloadTexture(sushis[5]);
+    
     // De-Initialization
     //--------------------------------------------------------------------------------------
     CloseWindow();                  // Close window and OpenGL context
@@ -305,44 +329,49 @@ bool comparaInput(No** fila, char input, Event* eventoPopup){
     return false;
 }
 
-void printFila(No** fila){
+void printFila(No** fila, Texture2D* sushis){
     No* aux = *fila;
     if(*fila){
-        drawSushi(aux, 18);
+        drawSushi(aux, 18, sushis);
         while(aux->proximo){
-            drawSushi(aux->proximo, 18);
+            drawSushi(aux->proximo, 18, sushis);
             aux = aux->proximo;
         }
     }
 }
 
-void drawSushi(No* no, int radius){
-    int fontCorrect = 5;
+void drawSushi(No* no, int radius, Texture2D* sushis){
     
     switch(no->item){
         case 'A':
-            DrawCircle(no->posX, no->posY, 18, GREEN);
-            DrawText("A", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
+            DrawTextureEx(sushis[0], (Vector2){no->posX, no->posY}, 0, 0.5, WHITE);
+            //DrawCircle(no->posX, no->posY, 18, GREEN);
+            //DrawText("A", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'S':
-            DrawCircle(no->posX , no->posY , 18, GREEN);
-            DrawText("S", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
+            DrawTextureEx(sushis[1], (Vector2){no->posX, no->posY}, 0, 0.5, WHITE);
+            //DrawCircle(no->posX , no->posY , 18, GREEN);
+            //DrawText("S", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'D':
-            DrawCircle(no->posX , no->posY , 18, GREEN);
-            DrawText("D", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
+            DrawTextureEx(sushis[2], (Vector2){no->posX, no->posY}, 0, 0.5, WHITE);
+            //DrawCircle(no->posX , no->posY , 18, GREEN);
+            //DrawText("D", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'J':
-            DrawCircle(no->posX , no->posY , 18, GREEN);
-            DrawText("J", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
+            DrawTextureEx(sushis[3], (Vector2){no->posX, no->posY}, 0, 0.5, WHITE);
+            //DrawCircle(no->posX , no->posY , 18, GREEN);
+            //DrawText("J", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'K':
-            DrawCircle(no->posX , no->posY , 18, GREEN);
-            DrawText("K", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
+            DrawTextureEx(sushis[4], (Vector2){no->posX, no->posY}, 0, 0.5, WHITE);
+            //DrawCircle(no->posX , no->posY , 18, GREEN);
+            //DrawText("K", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'L':
-            DrawCircle(no->posX , no->posY , 18, GREEN);
-            DrawText("L", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);        
+            DrawTextureEx(sushis[5], (Vector2){no->posX, no->posY}, 0, 0.5, WHITE);
+            //DrawCircle(no->posX , no->posY , 18, GREEN);
+            //DrawText("L", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);        
     }
 }
 
