@@ -9,6 +9,7 @@
 #define waitTime 3.0f
 #define playingTime 10.0f
 
+#define mainMenuState 0
 #define playingState 1
 #define waitingState 2
 #define overState 3
@@ -50,6 +51,7 @@ bool TimerDone(Timer* timer);
 void updateSushiPositions(No** fila, int velocidade);
 void createRandomEvent(Event* evento);
 void drawLabels(Texture2D* labels);
+void drawPopup(char eventType, Texture2D* popups);
 
 
 int main() 
@@ -58,20 +60,19 @@ int main()
     const int screenHeight = 720;
     
     No* fila = NULL;
-    int dificuldade = 4, gameState = waitingState, pontuacao = 0, randomEventProc;
+    int dificuldade, gameState = mainMenuState, pontuacao = 0, randomEventProc, pedidosCompletos = 0;
     Timer playingTimer = {0}, waitingTimer = {0}, randomEventTimer = {0}, createEventTimer = {0};
     float displayTimer;
     Event eventoPopup;
-    Texture2D sushis[6], labels[6];
-    
+    Texture2D sushis[6], popups[2];
+    Vector2 pontoMouse;
+    bool exitWindow = false;
     
     //--------------------------------------------------------------------------------------
     // SETUP DO JOGO
     srand(time(NULL));
     
-    StartTimer(&waitingTimer, waitTime);
-    eventoPopup.isActive = false;
-    eventoPopup.eventType = 'E';
+    
     
     //--------------------------------------------------------------------------------------
     // INICIALIZANDO TELA
@@ -79,33 +80,55 @@ int main()
 
     //--------------------------------------------------------------------------------------
     // TEXTURAS    
-    sushis[0] = LoadTexture("resources/a06.png");
-    sushis[1] = LoadTexture("resources/a05.png");
-    sushis[2] = LoadTexture("resources/a04.png");
-    sushis[3] = LoadTexture("resources/a03.png");
-    sushis[4] = LoadTexture("resources/a02.png");
-    sushis[5] = LoadTexture("resources/a01.png");
+    sushis[0] = LoadTexture("resources/sushis/a06.png");
+    sushis[1] = LoadTexture("resources/sushis/a05.png");
+    sushis[2] = LoadTexture("resources/sushis/a04.png");
+    sushis[3] = LoadTexture("resources/sushis/a03.png");
+    sushis[4] = LoadTexture("resources/sushis/a02.png");
+    sushis[5] = LoadTexture("resources/sushis/a01.png");
     
-    labels[0] = LoadTexture("resources/labelA.png");
-    labels[1] = LoadTexture("resources/labelS.png");
-    labels[2] = LoadTexture("resources/labelD.png");
-    labels[3] = LoadTexture("resources/labelJ.png");
-    labels[4] = LoadTexture("resources/labelK.png");
-    labels[5] = LoadTexture("resources/labelL.png");
+    popups[0] = LoadTexture("resources/baloes/balao1.png");
+    popups[1] = LoadTexture("resources/baloes/balao3.png");
+        
+    Texture2D background = LoadTexture("resources/elementosDeTela/fundoGeral.png");
+    Texture2D backgroundImage = LoadTexture("resources/elementosDeTela/jogandoFundo.png");
+    Texture2D backgroundEspera = LoadTexture("resources/elementosDeTela/esperaFundo.png");
+    Texture2D guiaInputs = LoadTexture("resources/elementosDeTela/guiaInputs.png");
     
-    Texture2D textoPontos = LoadTexture("resources/Pontuacao.png");
-    Texture2D textoPedido = LoadTexture("resources/PedidosCompletos.png");
-    
-    Texture2D backgroundDark = LoadTexture("resources/fundo.png");
-    Texture2D backgroundLight = LoadTexture("resources/fundo2.png");
-    Texture2D backgroundImage = LoadTexture("resources/backgroundImage1.png");
-    Texture2D textBackground = LoadTexture("resources/backgroundPontos.png");
+    Texture2D bckgMenu = LoadTexture("resources/elementosDeTela/menuPrincipal.png");
+    Texture2D botaoIniciar = LoadTexture("resources/botoes/iniciarStandard.png");
+    Texture2D botaoIniciarMouseOver = LoadTexture("resources/botoes/iniciarMouseOver.png");
+    Texture2D botaoSair = LoadTexture("resources/botoes/sairStandard.png");
+    Texture2D botaoSairMouseOver = LoadTexture("resources/botoes/sairMouseOver.png");
+    Texture2D botaoReiniciar = LoadTexture("resources/botoes/reiniciarStandard.png");
+    Texture2D botaoReiniciarMouseOver = LoadTexture("resources/botoes/reiniciarMouseOver.png");
 
     SetTargetFPS(60);               
     //--------------------------------------------------------------------------------------    
     // LOOP DE JOGO
-    while (!WindowShouldClose())    // Detect window close button or ESC key
+    while (!exitWindow)    // Detect window close button or ESC key
     {
+        if(IsKeyPressed(KEY_ESCAPE) || WindowShouldClose()) exitWindow = true;
+        //----------------------------------------------------------------------------------
+        // MENU PRINCIPAL
+        if(gameState == mainMenuState){
+            pontoMouse = GetMousePosition();
+            
+            if(CheckCollisionPointRec(pontoMouse, (Rectangle){533, 453, 300, 81}) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { //BOTÃO INICIAR
+                gameState = waitingState;
+                StartTimer(&waitingTimer, waitTime);
+                pontuacao = 0;
+                pedidosCompletos = 0;
+                eventoPopup.isActive = false;
+                eventoPopup.eventType = 'E';
+                dificuldade = 4;
+                
+            }
+            
+            if(CheckCollisionPointRec(pontoMouse, (Rectangle){533, 552, 300, 81}) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { // BOTÃO SAIR
+                exitWindow = true;
+            }
+        }
         
         //----------------------------------------------------------------------------------
         // ESPERA ENTRE NIVEIS
@@ -153,7 +176,22 @@ int main()
                 checkKeyPressed(&fila, &pontuacao, &playingTimer, &eventoPopup);
             }else{
                 gameState = waitingState;
+                pedidosCompletos++;
                 StartTimer(&waitingTimer, waitTime);
+            }
+        }
+        
+        //----------------------------------------------------------------------------------
+        // GAME OVER
+        
+        if(gameState == overState){
+            pontoMouse = GetMousePosition();
+            if(CheckCollisionPointRec(pontoMouse, (Rectangle){633, 400, 300, 81}) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                gameState = mainMenuState;
+            }
+            
+            if(CheckCollisionPointRec(pontoMouse, (Rectangle){633, 500, 300, 81}) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                exitWindow = true;
             }
         }
         
@@ -164,120 +202,71 @@ int main()
             ClearBackground(RAYWHITE);
             
             //----------------------------------------------------------------------------------
+            // MENU PRINCIPAL
+            if(gameState == mainMenuState){
+                DrawTexture(bckgMenu, -4, 0, WHITE);
+                
+                if(CheckCollisionPointRec(pontoMouse, (Rectangle){533, 453, 300, 81})) DrawTexture(botaoIniciarMouseOver, 533, 453, WHITE);
+                else DrawTexture(botaoIniciar, 533, 453, WHITE);
+                
+                if(CheckCollisionPointRec(pontoMouse, (Rectangle){533, 552, 300, 81})) DrawTexture(botaoSairMouseOver, 533, 552, WHITE);
+                else DrawTexture(botaoSair, 533, 552, WHITE);
+            }
+            
+            //----------------------------------------------------------------------------------
             // ESPERA ENTRE NIVEIS
             if(gameState == waitingState){
-                DrawTexture(backgroundDark, 0, 0, WHITE);
-                DrawTexture(backgroundLight, 20, 20, WHITE);
-                DrawTexture(backgroundImage, 327, 16, WHITE);
-                DrawTexture(textBackground, 45, 199, WHITE);
+                DrawTexture(background, -4, 0, WHITE);
+                DrawTexture(backgroundEspera, 322, 12, WHITE);
                 
                 DrawText(TextFormat("%.2fs", displayTimer), 1034, 51, 50, GREEN);
-                DrawTexture(textoPontos, 100, 245, WHITE);
-                DrawText(TextFormat("%d", pontuacao),60, 295, 50, LIGHTGRAY);
-                DrawTexture(textoPontos, 100, 245, WHITE);
-                drawLabels(&labels);
+                DrawText(TextFormat("%d", pontuacao),60, 295, 50, BLACK);
+                DrawText(TextFormat("%d", pedidosCompletos),60, 561, 50, BLACK);
+                DrawTexture(guiaInputs, 1219, 0, WHITE);
             }
             
             
             //----------------------------------------------------------------------------------
             // JOGANDO
             if(gameState == playingState){
-                DrawTexture(backgroundDark, 0, 0, WHITE);
-                DrawTexture(backgroundLight, 20, 20, WHITE);
+                DrawTexture(background, -4, 0, WHITE);
                 DrawTexture(backgroundImage, 327, 16, WHITE);
-                DrawTexture(textBackground, 45, 199, WHITE);
                 
                 DrawText(TextFormat("%.2fs", displayTimer), 1034, 51, 50, RED);
-                DrawTexture(textoPontos, 100, 245, WHITE);
-                DrawText(TextFormat("%d", pontuacao),60, 295, 50, LIGHTGRAY);
-                drawLabels(&labels);
+                DrawText(TextFormat("%d", pontuacao),60, 295, 50, BLACK);
+                DrawText(TextFormat("%d", pedidosCompletos),60, 561, 50, BLACK);
                 
                 if(eventoPopup.isActive) {
-                    DrawCircle(640, 300, 18, YELLOW);  
-                    DrawText(TextFormat("%c", eventoPopup.eventType),637, 297, 20, LIGHTGRAY);
+                    drawPopup(eventoPopup.eventType, popups);
                 }
-                if(gameState == playingState) printFila(&fila, &sushis);
+                if(gameState == playingState) printFila(&fila, sushis);
+                
+                DrawTexture(guiaInputs, 1219, 0, WHITE);
                 
                 
             }
             
             //----------------------------------------------------------------------------------
             // GAME OVER
-            if(gameState == overState) DrawText("GAME OVER!", 350, 320, 100, RED);
-            
-            
-            //Texto
-            
-            /*DrawText("Tempo: 10s",550, 20, 20, LIGHTGRAY);
-            DrawText("Completos: 5 pedidos",1000, 20, 20, LIGHTGRAY);
-            
-            //Personagens
-            DrawRectangle(410, 200, 100, 200, BLACK);
-            DrawRectangle(780, 200, 100, 200, BLACK);
-            
-            //Esteira
-            DrawRectangle(0, 400, 1280, 70, LIGHTGRAY);
-            
-            //Guia de inputs
-            DrawCircle(510, 550, 18, RED);
-            DrawCircle(560, 550, 18, RED);
-            DrawCircle(610, 550, 18, RED);
-            DrawCircle(660, 550, 18, RED);
-            DrawCircle(710, 550, 18, RED);
-            DrawCircle(760, 550, 18, RED);
-            
-            DrawText("A", 510, 570, 20, LIGHTGRAY);
-            DrawText("S", 560, 570, 20, LIGHTGRAY);
-            DrawText("D", 610, 570, 20, LIGHTGRAY);
-            DrawText("J", 660, 570, 20, LIGHTGRAY);
-            DrawText("K", 710, 570, 20, LIGHTGRAY);
-            DrawText("L", 760, 570, 20, LIGHTGRAY); */
-            
-            //Popups
-            
-            /*
-            DrawCircle(410, 150, 18, YELLOW);
-            DrawCircle(460, 150, 18, YELLOW);
-            DrawCircle(510, 150, 18, YELLOW);            
-            DrawCircle(780, 150, 18, YELLOW);
-            DrawCircle(830, 150, 18, YELLOW);
-            DrawCircle(880, 150, 18, YELLOW);
-            
-            DrawText("Q", 410, 110, 20, LIGHTGRAY);
-            DrawText("W", 460, 110, 20, LIGHTGRAY);
-            DrawText("E", 510, 110, 20, LIGHTGRAY);
-            DrawText("U", 780, 110, 20, LIGHTGRAY);
-            DrawText("I", 830, 110, 20, LIGHTGRAY);
-            DrawText("O", 880, 110, 20, LIGHTGRAY);
-            */
-            //Items na Esteira
+            if(gameState == overState) {
+                DrawTexture(background, -4, 0, WHITE);
+                DrawTexture(backgroundEspera, 322, 12, WHITE);
+                
+                DrawText(TextFormat("%d", pontuacao),60, 295, 50, BLACK);
+                DrawText(TextFormat("%d", pedidosCompletos),60, 561, 50, BLACK);
+                                
+                DrawText("GAME OVER!", 450, 150, 100, RED);
+                
+                if(CheckCollisionPointRec(pontoMouse, (Rectangle){633, 400, 300, 81})) DrawTexture(botaoReiniciarMouseOver, 633, 400, WHITE);
+                else DrawTexture(botaoReiniciar, 633, 400, WHITE);
+                
+                if(CheckCollisionPointRec(pontoMouse, (Rectangle){633, 500, 300, 81})) DrawTexture(botaoSairMouseOver, 633, 500, WHITE);
+                else DrawTexture(botaoSair, 633, 500, WHITE);
+            }
             
             
         EndDrawing();
     }
-    
-    
-    UnloadTexture(sushis[0]);
-    UnloadTexture(sushis[1]);
-    UnloadTexture(sushis[2]);
-    UnloadTexture(sushis[3]);
-    UnloadTexture(sushis[4]);
-    UnloadTexture(sushis[5]);
-    
-    UnloadTexture(labels[0]);
-    UnloadTexture(labels[1]);
-    UnloadTexture(labels[2]);
-    UnloadTexture(labels[3]);
-    UnloadTexture(labels[4]);
-    UnloadTexture(labels[5]);
-    
-    UnloadTexture(textoPontos);
-    UnloadTexture(textoPedido);
-    
-    UnloadTexture(backgroundDark);
-    UnloadTexture(backgroundLight);
-    UnloadTexture(backgroundImage);
-    UnloadTexture(textBackground);
     
     // De-Initialization
     //--------------------------------------------------------------------------------------
@@ -302,8 +291,7 @@ void enfileirar(No **fila, char item, int posDesloc){
                 aux = aux->proximo;
             aux->proximo = novo;
         }
-    }else
-        printf("\nErro ao alocar memoria.\n");
+    }
 }
 
 No* desenfileirar(No **fila){
@@ -394,52 +382,37 @@ void drawSushi(No* no, int radius, Texture2D* sushis){
     switch(no->item){
         case 'A':
             DrawTextureEx(sushis[0], (Vector2){no->posX, no->posY}, 0, 1, WHITE);
-            //DrawCircle(no->posX, no->posY, 18, GREEN);
-            //DrawText("A", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'S':
             DrawTextureEx(sushis[1], (Vector2){no->posX, no->posY}, 0, 1, WHITE);
-            //DrawCircle(no->posX , no->posY , 18, GREEN);
-            //DrawText("S", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'D':
             DrawTextureEx(sushis[2], (Vector2){no->posX, no->posY}, 0, 1, WHITE);
-            //DrawCircle(no->posX , no->posY , 18, GREEN);
-            //DrawText("D", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'J':
             DrawTextureEx(sushis[3], (Vector2){no->posX, no->posY}, 0, 1, WHITE);
-            //DrawCircle(no->posX , no->posY , 18, GREEN);
-            //DrawText("J", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'K':
             DrawTextureEx(sushis[4], (Vector2){no->posX, no->posY}, 0, 1, WHITE);
-            //DrawCircle(no->posX , no->posY , 18, GREEN);
-            //DrawText("K", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'L':
             DrawTextureEx(sushis[5], (Vector2){no->posX, no->posY}, 0, 1, WHITE);
-            //DrawCircle(no->posX , no->posY , 18, GREEN);
-            //DrawText("L", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);        
     }
 }
 
-
-
-// start or restart a timer with a specific lifetime
+// Inicia um timer com uma duração especificada
 void StartTimer(Timer* timer, float lifetime){
     if (timer != NULL)
         timer->Lifetime = lifetime;
 }
 
-// update a timer with the current frame time
+// Atualiza o timer com o tempo de frame
 void UpdateTimer(Timer* timer){
-    // subtract this frame from the timer if it's not allready expired
     if (timer != NULL && timer->Lifetime > 0)
         timer->Lifetime -= GetFrameTime();
 }
 
-// check if a timer is done.
+// Verifica se um timer terminou
 bool TimerDone(Timer* timer){
     if (timer != NULL)
         return timer->Lifetime <= 0;
@@ -473,11 +446,11 @@ void createRandomEvent(Event* evento){
     }
 }
 
-void drawLabels(Texture2D* labels){
-    DrawTexture(labels[0], 1234, 43, WHITE);
-    DrawTexture(labels[1], 1234, 156, WHITE);
-    DrawTexture(labels[2], 1234, 269, WHITE);
-    DrawTexture(labels[3], 1234, 382, WHITE);
-    DrawTexture(labels[4], 1234, 495, WHITE);
-    DrawTexture(labels[5], 1234, 608, WHITE);
+void drawPopup(char eventType, Texture2D* popups){
+    if(eventType == 'E'){
+        DrawTexture(popups[0], 683, 45, WHITE);
+    }
+    if(eventType == 'U'){
+        DrawTexture(popups[1], 683, 45, WHITE);
+    }
 }
