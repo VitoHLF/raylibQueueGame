@@ -16,10 +16,10 @@
 #define pontosPorAcerto 50
 #define penalidadePorErro 0.5f
 
-#define limiteEsteira 200
-#define velocidadeEsteira 1
-#define espacamentoMinimoSushis 50
-#define espacamentoInicialSushis 90
+#define limiteEsteira 395
+#define velocidadeEsteira 2
+#define espacamentoMinimoSushis 80
+#define espacamentoInicialSushis 110
 
 typedef struct No {
     char item;
@@ -49,7 +49,7 @@ void UpdateTimer(Timer* timer);
 bool TimerDone(Timer* timer);
 void updateSushiPositions(No** fila, int velocidade);
 void createRandomEvent(Event* evento);
-
+void drawLabels(Texture2D* labels);
 
 
 int main() 
@@ -62,7 +62,7 @@ int main()
     Timer playingTimer = {0}, waitingTimer = {0}, randomEventTimer = {0}, createEventTimer = {0};
     float displayTimer;
     Event eventoPopup;
-    Texture2D sushis[6];
+    Texture2D sushis[6], labels[6];
     
     
     //--------------------------------------------------------------------------------------
@@ -79,13 +79,27 @@ int main()
 
     //--------------------------------------------------------------------------------------
     // TEXTURAS    
-    sushis[0] = LoadTexture("resources/a01.png");
-    sushis[1] = LoadTexture("resources/a02.png");
-    sushis[2] = LoadTexture("resources/a03.png");
-    sushis[3] = LoadTexture("resources/a04.png");
-    sushis[4] = LoadTexture("resources/a05.png");
-    sushis[5] = LoadTexture("resources/a06.png");
+    sushis[0] = LoadTexture("resources/a06.png");
+    sushis[1] = LoadTexture("resources/a05.png");
+    sushis[2] = LoadTexture("resources/a04.png");
+    sushis[3] = LoadTexture("resources/a03.png");
+    sushis[4] = LoadTexture("resources/a02.png");
+    sushis[5] = LoadTexture("resources/a01.png");
     
+    labels[0] = LoadTexture("resources/labelA.png");
+    labels[1] = LoadTexture("resources/labelS.png");
+    labels[2] = LoadTexture("resources/labelD.png");
+    labels[3] = LoadTexture("resources/labelJ.png");
+    labels[4] = LoadTexture("resources/labelK.png");
+    labels[5] = LoadTexture("resources/labelL.png");
+    
+    Texture2D textoPontos = LoadTexture("resources/Pontuacao.png");
+    Texture2D textoPedido = LoadTexture("resources/PedidosCompletos.png");
+    
+    Texture2D backgroundDark = LoadTexture("resources/fundo.png");
+    Texture2D backgroundLight = LoadTexture("resources/fundo2.png");
+    Texture2D backgroundImage = LoadTexture("resources/backgroundImage1.png");
+    Texture2D textBackground = LoadTexture("resources/backgroundPontos.png");
 
     SetTargetFPS(60);               
     //--------------------------------------------------------------------------------------    
@@ -119,7 +133,7 @@ int main()
             if(TimerDone(&createEventTimer) && !eventoPopup.isActive){
                 randomEventProc = rand()%100;
                 if(randomEventProc<10) {
-                    StartTimer(&randomEventTimer, 1.5f);
+                    StartTimer(&randomEventTimer, 2.0f);
                     createRandomEvent(&eventoPopup);
                 }
                 else{
@@ -151,13 +165,33 @@ int main()
             
             //----------------------------------------------------------------------------------
             // ESPERA ENTRE NIVEIS
-            if(gameState == waitingState) DrawText(TextFormat("Proximos pedidos em %.2fs", displayTimer), 300, 100, 50, GREEN);
+            if(gameState == waitingState){
+                DrawTexture(backgroundDark, 0, 0, WHITE);
+                DrawTexture(backgroundLight, 20, 20, WHITE);
+                DrawTexture(backgroundImage, 327, 16, WHITE);
+                DrawTexture(textBackground, 45, 199, WHITE);
+                
+                DrawText(TextFormat("%.2fs", displayTimer), 1034, 51, 50, GREEN);
+                DrawTexture(textoPontos, 100, 245, WHITE);
+                DrawText(TextFormat("%d", pontuacao),60, 295, 50, LIGHTGRAY);
+                DrawTexture(textoPontos, 100, 245, WHITE);
+                drawLabels(&labels);
+            }
+            
             
             //----------------------------------------------------------------------------------
             // JOGANDO
             if(gameState == playingState){
-                DrawText(TextFormat("Tempo: %.2fs", displayTimer), 500, 100, 50, RED);
-                DrawText(TextFormat("Pontos: %d", pontuacao),20, 20, 20, LIGHTGRAY);
+                DrawTexture(backgroundDark, 0, 0, WHITE);
+                DrawTexture(backgroundLight, 20, 20, WHITE);
+                DrawTexture(backgroundImage, 327, 16, WHITE);
+                DrawTexture(textBackground, 45, 199, WHITE);
+                
+                DrawText(TextFormat("%.2fs", displayTimer), 1034, 51, 50, RED);
+                DrawTexture(textoPontos, 100, 245, WHITE);
+                DrawText(TextFormat("%d", pontuacao),60, 295, 50, LIGHTGRAY);
+                drawLabels(&labels);
+                
                 if(eventoPopup.isActive) {
                     DrawCircle(640, 300, 18, YELLOW);  
                     DrawText(TextFormat("%c", eventoPopup.eventType),637, 297, 20, LIGHTGRAY);
@@ -230,6 +264,21 @@ int main()
     UnloadTexture(sushis[4]);
     UnloadTexture(sushis[5]);
     
+    UnloadTexture(labels[0]);
+    UnloadTexture(labels[1]);
+    UnloadTexture(labels[2]);
+    UnloadTexture(labels[3]);
+    UnloadTexture(labels[4]);
+    UnloadTexture(labels[5]);
+    
+    UnloadTexture(textoPontos);
+    UnloadTexture(textoPedido);
+    
+    UnloadTexture(backgroundDark);
+    UnloadTexture(backgroundLight);
+    UnloadTexture(backgroundImage);
+    UnloadTexture(textBackground);
+    
     // De-Initialization
     //--------------------------------------------------------------------------------------
     CloseWindow();                  // Close window and OpenGL context
@@ -242,8 +291,8 @@ void enfileirar(No **fila, char item, int posDesloc){
     No *aux, *novo = malloc(sizeof(No));
     if(novo){
         novo->item = item;
-        novo->posX = 500 + posDesloc;
-        novo->posY = 435;
+        novo->posX = 1220 + posDesloc;
+        novo->posY = 505;
         novo->proximo = NULL;
         if(*fila == NULL)
             *fila = novo;
@@ -344,32 +393,32 @@ void drawSushi(No* no, int radius, Texture2D* sushis){
     
     switch(no->item){
         case 'A':
-            DrawTextureEx(sushis[0], (Vector2){no->posX, no->posY}, 0, 0.5, WHITE);
+            DrawTextureEx(sushis[0], (Vector2){no->posX, no->posY}, 0, 1, WHITE);
             //DrawCircle(no->posX, no->posY, 18, GREEN);
             //DrawText("A", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'S':
-            DrawTextureEx(sushis[1], (Vector2){no->posX, no->posY}, 0, 0.5, WHITE);
+            DrawTextureEx(sushis[1], (Vector2){no->posX, no->posY}, 0, 1, WHITE);
             //DrawCircle(no->posX , no->posY , 18, GREEN);
             //DrawText("S", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'D':
-            DrawTextureEx(sushis[2], (Vector2){no->posX, no->posY}, 0, 0.5, WHITE);
+            DrawTextureEx(sushis[2], (Vector2){no->posX, no->posY}, 0, 1, WHITE);
             //DrawCircle(no->posX , no->posY , 18, GREEN);
             //DrawText("D", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'J':
-            DrawTextureEx(sushis[3], (Vector2){no->posX, no->posY}, 0, 0.5, WHITE);
+            DrawTextureEx(sushis[3], (Vector2){no->posX, no->posY}, 0, 1, WHITE);
             //DrawCircle(no->posX , no->posY , 18, GREEN);
             //DrawText("J", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'K':
-            DrawTextureEx(sushis[4], (Vector2){no->posX, no->posY}, 0, 0.5, WHITE);
+            DrawTextureEx(sushis[4], (Vector2){no->posX, no->posY}, 0, 1, WHITE);
             //DrawCircle(no->posX , no->posY , 18, GREEN);
             //DrawText("K", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);
             break;
         case 'L':
-            DrawTextureEx(sushis[5], (Vector2){no->posX, no->posY}, 0, 0.5, WHITE);
+            DrawTextureEx(sushis[5], (Vector2){no->posX, no->posY}, 0, 1, WHITE);
             //DrawCircle(no->posX , no->posY , 18, GREEN);
             //DrawText("L", no->posX - fontCorrect, no->posY - fontCorrect, 18, BLACK);        
     }
@@ -422,4 +471,13 @@ void createRandomEvent(Event* evento){
             evento->eventType = 'U';
             break;
     }
+}
+
+void drawLabels(Texture2D* labels){
+    DrawTexture(labels[0], 1234, 43, WHITE);
+    DrawTexture(labels[1], 1234, 156, WHITE);
+    DrawTexture(labels[2], 1234, 269, WHITE);
+    DrawTexture(labels[3], 1234, 382, WHITE);
+    DrawTexture(labels[4], 1234, 495, WHITE);
+    DrawTexture(labels[5], 1234, 608, WHITE);
 }
