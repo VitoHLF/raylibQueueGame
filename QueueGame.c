@@ -238,8 +238,8 @@ int main()
                 DrawTexture(backgroundEspera, 322, 12, WHITE);
                 
                 DrawText(TextFormat("%.2fs", displayTimer), 1034, 51, 50, GREEN);
-                DrawText(TextFormat("%d", pontuacao),60, 295, 50, BLACK);
-                DrawText(TextFormat("%d", pedidosCompletos),60, 561, 50, BLACK);
+                DrawText(TextFormat("%d", pontuacao),100, 305, 50, BLACK);
+                DrawText(TextFormat("%d", pedidosCompletos),140, 561, 50, BLACK);
                 DrawTexture(guiaInputs, 1219, 0, WHITE);
             }
             
@@ -269,8 +269,8 @@ int main()
                 DrawTexture(balcao, 331, 450, WHITE);
                 
                 DrawText(TextFormat("%.2fs", displayTimer), 1034, 51, 50, RED);
-                DrawText(TextFormat("%d", pontuacao),60, 295, 50, BLACK);
-                DrawText(TextFormat("%d", pedidosCompletos),60, 561, 50, BLACK);
+                DrawText(TextFormat("%d", pontuacao),100, 305, 50, BLACK);
+                DrawText(TextFormat("%d", pedidosCompletos),140, 561, 50, BLACK);
                 
                 if(eventoPopup.isActive) {
                     drawPopup(eventoPopup.eventType, popups);
@@ -288,8 +288,8 @@ int main()
                 DrawTexture(background, -4, 0, WHITE);
                 DrawTexture(backgroundEspera, 322, 12, WHITE);
                 
-                DrawText(TextFormat("%d", pontuacao),60, 295, 50, BLACK);
-                DrawText(TextFormat("%d", pedidosCompletos),60, 561, 50, BLACK);
+                DrawText(TextFormat("%d", pontuacao),100, 305, 50, BLACK);
+                DrawText(TextFormat("%d", pedidosCompletos),140, 561, 50, BLACK);
                                 
                 DrawText("GAME OVER!", 450, 150, 100, RED);
                 
