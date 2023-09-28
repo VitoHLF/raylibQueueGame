@@ -252,16 +252,16 @@ int main()
                 
                 switch(currentFrame%4){
                     case 0:
-                        DrawTexture(playingAnimFrames[currentFrame%4], 477, 160, WHITE);
+                        DrawTextureEx(playingAnimFrames[currentFrame%4], (Vector2){400, 110}, 0, 1.4, WHITE);
                         break;
                     case 1:
-                        DrawTexture(playingAnimFrames[currentFrame%4], 477, 156, WHITE);
+                        DrawTextureEx(playingAnimFrames[currentFrame%4], (Vector2){400, 110}, 0, 1.2, WHITE);
                         break;
                     case 2:
-                        DrawTexture(playingAnimFrames[currentFrame%4], 477, 151, WHITE);
+                        DrawTextureEx(playingAnimFrames[currentFrame%4], (Vector2){400, 100}, 0, 1.2, WHITE);
                         break;
                     case 3:
-                        DrawTexture(playingAnimFrames[currentFrame%4], 477, 176, WHITE);
+                        DrawTextureEx(playingAnimFrames[currentFrame%4], (Vector2){400, 120}, 0, 1.2, WHITE);
                         break;
                     
                 }
