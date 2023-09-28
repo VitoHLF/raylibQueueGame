@@ -135,7 +135,7 @@ int main()
         if(gameState == waitingState){
             UpdateTimer(&waitingTimer);
             displayTimer = waitingTimer.Lifetime;
-            if(TimerDone(&waitingTimer)){
+            if(TimerDone(&waitingTimer)){ // verifica se o tempo de interludio acabou e muda o estado do jogo para jogando
                 dificuldade++;
                 geraItens(&fila, dificuldade);
                 gameState = playingState;
@@ -153,7 +153,7 @@ int main()
             
             displayTimer = playingTimer.Lifetime;
             
-            if(TimerDone(&createEventTimer) && !eventoPopup.isActive){
+            if(TimerDone(&createEventTimer) && !eventoPopup.isActive){ // gera um evento aleatorio de popup 
                 randomEventProc = rand()%100;
                 if(randomEventProc<10) {
                     StartTimer(&randomEventTimer, 2.0f);
@@ -164,17 +164,17 @@ int main()
                 }
             }
             
-            if(TimerDone(&randomEventTimer)){
+            if(TimerDone(&randomEventTimer)){ // determina se um evento esta ativo
                 eventoPopup.isActive = false;
             }
             
-            if(TimerDone(&playingTimer)){
+            if(TimerDone(&playingTimer)){ // muda o jogo para a tela de fim de jogo caso o tempo zerar
                 gameState = overState;
             }
-            else if(fila){
+            else if(fila){ // gerenciador de inputs e atualizações de posição dos nós 
                 updateSushiPositions(&fila, dificuldade-3);
                 checkKeyPressed(&fila, &pontuacao, &playingTimer, &eventoPopup);
-            }else{
+            }else{ // se a fila estiver vazia o jogo sobe de nivel
                 gameState = waitingState;
                 pedidosCompletos++;
                 StartTimer(&waitingTimer, waitTime);
@@ -186,11 +186,11 @@ int main()
         
         if(gameState == overState){
             pontoMouse = GetMousePosition();
-            if(CheckCollisionPointRec(pontoMouse, (Rectangle){633, 400, 300, 81}) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            if(CheckCollisionPointRec(pontoMouse, (Rectangle){633, 400, 300, 81}) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {  // botão de retorno ao menu principal
                 gameState = mainMenuState;
             }
             
-            if(CheckCollisionPointRec(pontoMouse, (Rectangle){633, 500, 300, 81}) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            if(CheckCollisionPointRec(pontoMouse, (Rectangle){633, 500, 300, 81}) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { // botão de encerrar jogo
                 exitWindow = true;
             }
         }
@@ -206,9 +206,10 @@ int main()
             if(gameState == mainMenuState){
                 DrawTexture(bckgMenu, -4, 0, WHITE);
                 
+                //botão iniciar
                 if(CheckCollisionPointRec(pontoMouse, (Rectangle){533, 453, 300, 81})) DrawTexture(botaoIniciarMouseOver, 533, 453, WHITE);
                 else DrawTexture(botaoIniciar, 533, 453, WHITE);
-                
+                //botão sair
                 if(CheckCollisionPointRec(pontoMouse, (Rectangle){533, 552, 300, 81})) DrawTexture(botaoSairMouseOver, 533, 552, WHITE);
                 else DrawTexture(botaoSair, 533, 552, WHITE);
             }
@@ -239,7 +240,7 @@ int main()
                 if(eventoPopup.isActive) {
                     drawPopup(eventoPopup.eventType, popups);
                 }
-                if(gameState == playingState) printFila(&fila, sushis);
+                if(gameState == playingState) printFila(&fila, sushis); // função de print da fila (sushis) na tela
                 
                 DrawTexture(guiaInputs, 1219, 0, WHITE);
                 
@@ -257,10 +258,10 @@ int main()
                                 
                 DrawText("GAME OVER!", 450, 150, 100, RED);
                 
-                if(CheckCollisionPointRec(pontoMouse, (Rectangle){633, 400, 300, 81})) DrawTexture(botaoReiniciarMouseOver, 633, 400, WHITE);
+                if(CheckCollisionPointRec(pontoMouse, (Rectangle){633, 400, 300, 81})) DrawTexture(botaoReiniciarMouseOver, 633, 400, WHITE); //botão de reiniciar
                 else DrawTexture(botaoReiniciar, 633, 400, WHITE);
                 
-                if(CheckCollisionPointRec(pontoMouse, (Rectangle){633, 500, 300, 81})) DrawTexture(botaoSairMouseOver, 633, 500, WHITE);
+                if(CheckCollisionPointRec(pontoMouse, (Rectangle){633, 500, 300, 81})) DrawTexture(botaoSairMouseOver, 633, 500, WHITE); //botão de sair
                 else DrawTexture(botaoSair, 633, 500, WHITE);
             }
             
@@ -279,9 +280,9 @@ int main()
 void enfileirar(No **fila, char item, int posDesloc){
     No *aux, *novo = malloc(sizeof(No));
     if(novo){
-        novo->item = item;
-        novo->posX = 1220 + posDesloc;
-        novo->posY = 505;
+        novo->item = item; // "ID" do item
+        novo->posX = 1220 + posDesloc; //coordenada x de posição na tela
+        novo->posY = 505; //coordenada y de posição na tela
         novo->proximo = NULL;
         if(*fila == NULL)
             *fila = novo;
@@ -304,7 +305,7 @@ No* desenfileirar(No **fila){
     return remover;
 }
 
-void geraItens(No** fila, int dificuldade){
+void geraItens(No** fila, int dificuldade){ // função que gera os items com IDs aleatórios e os enfileira em sequencia
     for(int i = 0; i<dificuldade; i++){
         switch(rand()%6){
             case 0:
@@ -329,7 +330,7 @@ void geraItens(No** fila, int dificuldade){
     }
 }
 
-void checkKeyPressed(No** fila, int *pontuacao, Timer* playingTimer, Event* eventoPopup){
+void checkKeyPressed(No** fila, int *pontuacao, Timer* playingTimer, Event* eventoPopup){ // função de controle de inputs, envia os parametros relevantes para a função de controle de fila
     int input = GetKeyPressed();
     
     if(eventoPopup->isActive && input == KEY_E && comparaInput(fila, 'E', eventoPopup)){
@@ -354,7 +355,9 @@ void checkKeyPressed(No** fila, int *pontuacao, Timer* playingTimer, Event* even
 
 bool comparaInput(No** fila, char input, Event* eventoPopup){
     
-    if(eventoPopup->isActive && eventoPopup->eventType == input) return true;    
+    if(eventoPopup->isActive && eventoPopup->eventType == input) return true; //verifica se evento ativo e input correto
+    
+    // verifica se input equivale a primeiro elemento da fila
     if(*fila){
         No *remover, *aux = *fila;
         if(input == aux->item){
@@ -366,7 +369,7 @@ bool comparaInput(No** fila, char input, Event* eventoPopup){
     return false;
 }
 
-void printFila(No** fila, Texture2D* sushis){
+void printFila(No** fila, Texture2D* sushis){ // print dos elementos da fila em sequencia, chama a função drawSushi que faz o controle de texturas por ID
     No* aux = *fila;
     if(*fila){
         drawSushi(aux, 18, sushis);
@@ -420,7 +423,7 @@ bool TimerDone(Timer* timer){
 	return false;
 }
 
-void updateSushiPositions(No** fila, int velocidade){
+void updateSushiPositions(No** fila, int velocidade){ //itera pela fila e atualiza suas posições no eixo X caso o movimento seja valido
     No* aux = *fila;
     if(*fila){        
         if(aux->posX >= limiteEsteira) aux->posX -= velocidadeEsteira + velocidade/4;
@@ -431,7 +434,7 @@ void updateSushiPositions(No** fila, int velocidade){
     }
 }
 
-void createRandomEvent(Event* evento){
+void createRandomEvent(Event* evento){ // criação do evento de popup com ID aleatório
     int eventType = rand()%2;
     
     switch(eventType){
@@ -446,7 +449,7 @@ void createRandomEvent(Event* evento){
     }
 }
 
-void drawPopup(char eventType, Texture2D* popups){
+void drawPopup(char eventType, Texture2D* popups){ // draws dos elementos visuais de popup
     if(eventType == 'E'){
         DrawTexture(popups[0], 683, 45, WHITE);
     }
