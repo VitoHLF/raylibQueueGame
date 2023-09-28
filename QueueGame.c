@@ -17,6 +17,7 @@
 #define pontosPorAcerto 50
 #define penalidadePorErro 0.5f
 
+#define animationLapse 2
 #define limiteEsteira 395
 #define velocidadeEsteira 2
 #define espacamentoMinimoSushis 80
@@ -52,7 +53,7 @@ void updateSushiPositions(No** fila, int velocidade);
 void createRandomEvent(Event* evento);
 void drawLabels(Texture2D* labels);
 void drawPopup(char eventType, Texture2D* popups);
-
+void flushFila(No** fila);
 
 int main() 
 {
@@ -61,12 +62,13 @@ int main()
     
     No* fila = NULL;
     int dificuldade, gameState = mainMenuState, pontuacao = 0, randomEventProc, pedidosCompletos = 0;
-    Timer playingTimer = {0}, waitingTimer = {0}, randomEventTimer = {0}, createEventTimer = {0};
+    Timer playingTimer = {0}, waitingTimer = {0}, randomEventTimer = {0}, createEventTimer = {0}, animationTimer = {0};
     float displayTimer;
     Event eventoPopup;
-    Texture2D sushis[6], popups[2];
+    Texture2D sushis[6], popups[2], playingAnimFrames[4];
     Vector2 pontoMouse;
     bool exitWindow = false;
+    unsigned long currentFrame = 0;
     
     //--------------------------------------------------------------------------------------
     // SETUP DO JOGO
@@ -89,9 +91,16 @@ int main()
     
     popups[0] = LoadTexture("resources/baloes/balao1.png");
     popups[1] = LoadTexture("resources/baloes/balao3.png");
+    
+    playingAnimFrames[0] = LoadTexture("resources/personagens/personagensFrame1.png");
+    playingAnimFrames[1] = LoadTexture("resources/personagens/personagensFrame2.png");
+    playingAnimFrames[2] = LoadTexture("resources/personagens/personagensFrame3.png");
+    playingAnimFrames[3] = LoadTexture("resources/personagens/personagensFrame4.png");
+    
         
     Texture2D background = LoadTexture("resources/elementosDeTela/fundoGeral.png");
     Texture2D backgroundImage = LoadTexture("resources/elementosDeTela/jogandoFundo.png");
+    Texture2D balcao = LoadTexture("resources/elementosDeTela/balcao.png");
     Texture2D backgroundEspera = LoadTexture("resources/elementosDeTela/esperaFundo.png");
     Texture2D guiaInputs = LoadTexture("resources/elementosDeTela/guiaInputs.png");
     
@@ -115,8 +124,10 @@ int main()
             pontoMouse = GetMousePosition();
             
             if(CheckCollisionPointRec(pontoMouse, (Rectangle){533, 453, 300, 81}) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { //BOTÃO INICIAR
+                flushFila(&fila);
                 gameState = waitingState;
                 StartTimer(&waitingTimer, waitTime);
+                StartTimer(&animationTimer, animationLapse);
                 pontuacao = 0;
                 pedidosCompletos = 0;
                 eventoPopup.isActive = false;
@@ -150,6 +161,7 @@ int main()
             UpdateTimer(&playingTimer);
             UpdateTimer(&createEventTimer);
             UpdateTimer(&randomEventTimer);            
+            UpdateTimer(&animationTimer);
             
             displayTimer = playingTimer.Lifetime;
             
@@ -162,6 +174,11 @@ int main()
                 else{
                     StartTimer(&createEventTimer, 1.0f);
                 }
+            }
+            
+            if(TimerDone(&animationTimer)){
+                currentFrame++;
+                StartTimer(&animationTimer, animationLapse);
             }
             
             if(TimerDone(&randomEventTimer)){ // determina se um evento esta ativo
@@ -232,6 +249,24 @@ int main()
             if(gameState == playingState){
                 DrawTexture(background, -4, 0, WHITE);
                 DrawTexture(backgroundImage, 327, 16, WHITE);
+                
+                switch(currentFrame%4){
+                    case 0:
+                        DrawTexture(playingAnimFrames[currentFrame%4], 477, 160, WHITE);
+                        break;
+                    case 1:
+                        DrawTexture(playingAnimFrames[currentFrame%4], 477, 156, WHITE);
+                        break;
+                    case 2:
+                        DrawTexture(playingAnimFrames[currentFrame%4], 477, 151, WHITE);
+                        break;
+                    case 3:
+                        DrawTexture(playingAnimFrames[currentFrame%4], 477, 176, WHITE);
+                        break;
+                    
+                }
+                
+                DrawTexture(balcao, 331, 450, WHITE);
                 
                 DrawText(TextFormat("%.2fs", displayTimer), 1034, 51, 50, RED);
                 DrawText(TextFormat("%d", pontuacao),60, 295, 50, BLACK);
@@ -452,8 +487,18 @@ void createRandomEvent(Event* evento){ // criação do evento de popup com ID al
 void drawPopup(char eventType, Texture2D* popups){ // draws dos elementos visuais de popup
     if(eventType == 'E'){
         DrawTexture(popups[0], 683, 45, WHITE);
+        DrawText("E", 743, 95, 50, BLACK);
     }
     if(eventType == 'U'){
         DrawTexture(popups[1], 683, 45, WHITE);
+        DrawText("U", 743, 95, 50, BLACK);
+    }
+}
+
+void flushFila(No** fila){
+    No* aux = *fila;
+    while(aux){
+        desenfileirar(fila);
+        aux = aux->proximo;
     }
 }
